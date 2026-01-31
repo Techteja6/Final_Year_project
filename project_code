@@ -1,0 +1,76 @@
+import time
+import requests
+import speech_recognition as sr
+from sensors.acs712_sensor import read_current
+from sensors.zmpt101b_sensor import read_voltage
+from utils.relay_control import turn_on, turn_off
+from config import POWER_THRESHOLD, RELAY_PIN_1, RELAY_PIN_2, THINGSPEAK_API_KEY
+
+def upload_to_thingspeak(voltage, current, power):
+    """Uploads data to ThingSpeak."""
+    url = f"https://api.thingspeak.com/update?api_key={THINGSPEAK_API_KEY}&field1={voltage}&field2={current}&field3={power}"
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            print("Data uploaded to ThingSpeak")
+        else:
+            print("Failed to upload data")
+    except:
+        print("ThingSpeak upload failed")
+
+def voice_command():
+    """Captures voice command from microphone."""
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening for command...")
+        audio = recognizer.listen(source, phrase_time_limit=3)
+        try:
+            command = recognizer.recognize_google(audio).lower()
+            print(f"Command: {command}")
+            return command
+        except sr.UnknownValueError:
+            return ""
+        except sr.RequestError:
+            print("Speech recognition service error")
+            return ""
+
+def main():
+    print("Starting Smart Home Automation System...")
+    try:
+        while True:
+            voltage = read_voltage()
+            current = read_current()
+            power = round(voltage * current, 2)
+
+            print(f"Voltage: {voltage} V | Current: {current} A | Power: {power} W")
+
+            # Upload data to ThingSpeak
+            upload_to_thingspeak(voltage, current, power)
+
+            # Overload protection
+            if power > POWER_THRESHOLD:
+                print("Overload detected! Turning off appliances...")
+                turn_off(RELAY_PIN_1)
+                turn_off(RELAY_PIN_2)
+
+            # Voice control
+            command = voice_command()
+            if "on 1" in command:
+                turn_on(RELAY_PIN_1)
+            elif "off 1" in command:
+                turn_off(RELAY_PIN_1)
+            elif "on 2" in command:
+                turn_on(RELAY_PIN_2)
+            elif "off 2" in command:
+                turn_off(RELAY_PIN_2)
+
+            time.sleep(2)
+
+    except KeyboardInterrupt:
+        print("Exiting program...")
+    finally:
+        import RPi.GPIO as GPIO
+        GPIO.cleanup()
+
+if __name__ == "__main__":
+    main()
