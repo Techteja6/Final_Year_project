@@ -1,5 +1,5 @@
 # Final_Year_project
-# Smart Home Automation System with Speech Recognition and Power Measurement
+# ADVANCE HOME AUTOMATION SYSTEM WITH SPEECH CONTROL AND POWER USAGE ANALYTICS
 
 ## Short Description
 IoT-based smart home automation system using Raspberry Pi 4, Python, and sensors (ACS712 & ZMPT101B) for **voice-controlled appliance operation**, **real-time power monitoring**, and **automatic overload protection**. Data is visualized on the **ThingSpeak dashboard**.
